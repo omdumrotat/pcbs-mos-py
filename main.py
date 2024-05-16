@@ -1,6 +1,5 @@
 import time
 import random
-from openai import OpenAI
 total = 1
 money = 50
 
