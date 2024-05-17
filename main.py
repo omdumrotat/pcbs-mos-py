@@ -9,18 +9,48 @@ total = 1
 money = 50
 
 def generate_problem():
-    history = [{"role": "user", "content": "Generate a PC problem and its correct response. Example (A is the right answer): my pc is experiencing an issue. A. Option A B. Option B C. Option C A"}]
+    history = [{"role": "user", "content": "Generate a PC problem and its correct response. Example (use this format, do not add anything else.): \n\n**Problem**: my pc is experiencing an issue. \n\n**Options**:\n\nA) Option A\nB) Option B\nC) Option C\n\n**Correct Response:** A)"}]
     response = client.chat.completions.create(
-      model="model-identifier",
-      messages=history,
-      max_tokens=100
+        model="model-identifier",
+        messages=history,
+        max_tokens=100
     )
     content = response.choices[0].message.content.strip().split("\n")
-    problem = content[0]
-    options = [option.strip() for option in content[1:] if option.strip()]
-    correct_response = options[-1].split()[-1]  # Extract the correct response (last word after splitting by space)
-    return problem, options, correct_response
-
+    
+    problem = ""
+    options = []
+    correct_response = ""
+    
+    try:
+        # Find the problem line
+        problem_line = next((line for line in content if line.startswith("**Problem:**")), None)
+        if problem_line:
+            problem = problem_line.split("**Problem:**")[1].strip()
+        
+        # Find the options lines
+        options_start = content.index("**Options:**") + 1
+        for i in range(options_start, len(content)):
+            line = content[i].strip()
+            if line.startswith(("A)", "B)", "C)")):
+                options.append(line.split(" ", 1)[1].strip())
+            if line.startswith("**Correct Response:**"):
+                break
+        
+        # Find the correct response line
+        correct_response_line = next((line for line in content if line.startswith("**Correct Response:**")), None)
+        if correct_response_line:
+            correct_response = correct_response_line.split("**Correct Response:**")[1].strip().split()[0].replace(")", "")
+        
+        # Ensure we have all necessary parts
+        if not problem or not options or not correct_response:
+            raise ValueError("Incomplete response format.")
+        
+        
+        return problem, options, correct_response
+    
+    except (IndexError, ValueError) as e:
+        print(f"Error parsing response: {e}")
+        return "Error generating problem", ["Option A", "Option B", "Option C"], "A"
 
 print("Welcome to the PC Store! You are the manager of this company, and you need to earn 1000 Money in the shortest time possible.")
 time.sleep(1)
