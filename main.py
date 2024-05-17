@@ -9,13 +9,18 @@ total = 1
 money = 50
 
 def generate_problem():
-    response = client.chat.Completion.create(
-      engine="model-identifier",
-      prompt="Generate a PC problem and its correct response.",
-      max_tokens=50
+    history = [{"role": "user", "content": "Generate a PC problem and its correct response. Example (A is the right answer): my pc is experiencing an issue. A. Option A B. Option B C. Option C A"}]
+    response = client.chat.completions.create(
+      model="model-identifier",
+      messages=history,
+      max_tokens=100
     )
-    problem = response.choices[0].text.strip()
-    return problem.split("\n")
+    content = response.choices[0].message.content.strip().split("\n")
+    problem = content[0]
+    options = [option.strip() for option in content[1:] if option.strip()]
+    correct_response = options[-1].split()[-1]  # Extract the correct response (last word after splitting by space)
+    return problem, options, correct_response
+
 
 print("Welcome to the PC Store! You are the manager of this company, and you need to earn 1000 Money in the shortest time possible.")
 time.sleep(1)
@@ -27,7 +32,7 @@ time.sleep(2)
 while True:
     profit = random.randint(60, 170)
     loss = random.randint(30, 50)
-    current_problem, correct_response = generate_problem()
+    current_problem, options, correct_response = generate_problem()
     customer = random.randint(1, 100)
 
     if total <= 10:
@@ -41,6 +46,9 @@ while True:
         else:
             print("\nDay " + str(total))
             print(f"Customer {customer} encounters a problem with their PC; {current_problem}")
+            print("Options:")
+            for i, option in enumerate(options):
+                print(f"{chr(65 + i)}. {option}")
 
             response = input("Input your response (A, B, or C): ")
 
